@@ -112,6 +112,25 @@ export const insertEcotramaUserSchema = z.object({
 export type InsertEcotramaUser = z.infer<typeof insertEcotramaUserSchema>;
 export type EcotramaUser = typeof ecotramaUsers.$inferSelect;
 
+export const products = pgTable("products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  barcode: text("barcode").notNull().unique(),
+  name: text("name").notNull(),
+  brand: text("brand"),
+  type: text("type").notNull(), // Plastic, Glass, Metal, etc.
+  points: integer("points").notNull().default(10),
+  description: text("description"),
+  createdAt: timestamp("created_at").default(sql`now()`),
+});
+
+export const insertProductSchema = createInsertSchema(products).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertProduct = z.infer<typeof insertProductSchema>;
+export type Product = typeof products.$inferSelect;
+
 export const scans = pgTable("scans", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").notNull(),

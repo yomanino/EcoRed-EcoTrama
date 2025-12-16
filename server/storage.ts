@@ -10,7 +10,9 @@ import {
   type RecyclingStats,
   type EcotramaUser,
   type InsertEcotramaUser,
-  type Scan
+  type Scan,
+  type Product,
+  type InsertProduct
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import session from "express-session";
@@ -20,7 +22,7 @@ import { pool, db as drizzleDb } from "./db";
 import { eq, desc } from "drizzle-orm";
 import {
   users, contactMessages, newsletterSubscribers, blogPosts,
-  recyclingStats, ecotramaUsers, scans
+  recyclingStats, ecotramaUsers, scans, products
 } from "@shared/schema";
 
 const MemoryStore = createMemoryStore(session);
@@ -48,9 +50,11 @@ export interface IStorage {
   createEcotramaUser(user: InsertEcotramaUser): Promise<EcotramaUser>;
   getEcotramaUserByEmail(email: string): Promise<EcotramaUser | undefined>;
   getEcotramaUser(id: string): Promise<EcotramaUser | undefined>;
-  recordScan(userId: string, wasteType: string, quantity: number): Promise<{ pointsEarned: number; newPoints: number }>;
+  recordScan(userId: string, wasteType: string, quantity: number, productPoints?: number): Promise<{ pointsEarned: number; newPoints: number }>;
   getLeaderboard(): Promise<EcotramaUser[]>;
   addPoints(userId: string, points: number): Promise<EcotramaUser>;
+  getProductByBarcode(barcode: string): Promise<Product | undefined>;
+  createProduct(product: InsertProduct): Promise<Product>;
 }
 
 export class MemStorage implements IStorage {
@@ -61,6 +65,7 @@ export class MemStorage implements IStorage {
   private recyclingStats: Map<string, RecyclingStats>;
   private ecotramaUsers: Map<string, EcotramaUser>;
   private scans: Map<string, Scan>;
+  private products: Map<string, Product>;
   sessionStore: session.Store;
 
   constructor() {
@@ -74,6 +79,7 @@ export class MemStorage implements IStorage {
     this.recyclingStats = new Map();
     this.ecotramaUsers = new Map();
     this.scans = new Map();
+    this.products = new Map();
     this.initializeSampleData();
   }
 
@@ -154,6 +160,42 @@ export class MemStorage implements IStorage {
     samplePosts.forEach((post) => {
       this.blogPosts.set(post.id, post);
     });
+
+    // Initialize sample products
+    const sampleProducts: Product[] = [
+      {
+        id: randomUUID(),
+        barcode: "123456", // Test barcode
+        name: "Botella de Agua 500ml",
+        brand: "Cristal",
+        type: "Plástico",
+        points: 15,
+        description: "Botella PET reciclable",
+        createdAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        barcode: "7701001725381", // Common Colombian barcode example (Milk)
+        name: "Leche Entera",
+        brand: "Alpina",
+        type: "Tetra Pak", // treated as Carton/Paper usually or specific category
+        points: 20,
+        description: "Envase Tetra Pak de 1 Litro",
+        createdAt: new Date(),
+      },
+      {
+        id: randomUUID(),
+        barcode: "7702090033621",
+        name: "Lata de Cerveza",
+        brand: "Club Colombia",
+        type: "Metal",
+        points: 25,
+        description: "Lata de aluminio 330ml",
+        createdAt: new Date(),
+      }
+    ];
+
+    sampleProducts.forEach(p => this.products.set(p.barcode, p));
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -293,14 +335,15 @@ export class MemStorage implements IStorage {
     return this.ecotramaUsers.get(id);
   }
 
-  async recordScan(userId: string, wasteType: string, quantity: number): Promise<{ pointsEarned: number; newPoints: number }> {
+  async recordScan(userId: string, wasteType: string, quantity: number, productPoints?: number): Promise<{ pointsEarned: number; newPoints: number }> {
     const user = Array.from(this.ecotramaUsers.values()).find(u => u.id === userId);
     if (!user) throw new Error("User not found");
 
     const pointsMap: Record<string, number> = {
       "Plástico": 10, "Vidrio": 15, "Metal": 20, "Papel": 5, "Orgánico": 8, "Electrónico": 50
     };
-    const pointsEarned = (pointsMap[wasteType] || 10) * quantity;
+    const pointsPerUnit = productPoints || pointsMap[wasteType] || 10;
+    const pointsEarned = pointsPerUnit * quantity;
 
     user.points = (user.points || 0) + pointsEarned;
     user.totalScans = (user.totalScans || 0) + 1;
@@ -337,6 +380,23 @@ export class MemStorage implements IStorage {
     user.league = this.calculateLeague(user.points);
 
     return user;
+  }
+
+  async getProductByBarcode(barcode: string): Promise<Product | undefined> {
+    return this.products.get(barcode);
+  }
+
+  async createProduct(product: InsertProduct): Promise<Product> {
+    const newProduct: Product = {
+      ...product,
+      id: randomUUID(),
+      createdAt: new Date(),
+      brand: product.brand || null,
+      description: product.description || null,
+      points: product.points || 10,
+    };
+    this.products.set(newProduct.barcode, newProduct);
+    return newProduct;
   }
 }
 
@@ -505,7 +565,7 @@ export class DatabaseStorage implements IStorage {
     return user;
   }
 
-  async recordScan(userId: string, wasteType: string, quantity: number): Promise<{ pointsEarned: number; newPoints: number }> {
+  async recordScan(userId: string, wasteType: string, quantity: number, productPoints?: number): Promise<{ pointsEarned: number; newPoints: number }> {
     const [user] = await this.db
       .select()
       .from(ecotramaUsers)
@@ -516,7 +576,10 @@ export class DatabaseStorage implements IStorage {
     const pointsMap: Record<string, number> = {
       "Plástico": 10, "Vidrio": 15, "Metal": 20, "Papel": 5, "Orgánico": 8, "Electrónico": 50
     };
-    const pointsEarned = (pointsMap[wasteType] || 10) * quantity;
+
+    // Use specific product points if provided, otherwise fallback to category base points
+    const pointsPerUnit = productPoints || pointsMap[wasteType] || 10;
+    const pointsEarned = pointsPerUnit * quantity;
     const newPoints = (user.points || 0) + pointsEarned;
     const newTotalScans = (user.totalScans || 0) + 1;
     const newRank = this.calculateRank(newPoints);
@@ -577,6 +640,21 @@ export class DatabaseStorage implements IStorage {
       .returning();
 
     return updatedUser;
+  }
+  async getProductByBarcode(barcode: string): Promise<Product | undefined> {
+    const [product] = await this.db
+      .select()
+      .from(products)
+      .where(eq(products.barcode, barcode));
+    return product;
+  }
+
+  async createProduct(product: InsertProduct): Promise<Product> {
+    const [newProduct] = await this.db
+      .insert(products)
+      .values(product)
+      .returning();
+    return newProduct;
   }
 }
 

@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Leaf, QrCode, TrendingUp, Users, Award, LogOut, Home as HomeIcon, BarChart3, Smartphone, Trophy, Crown, BookOpen } from "lucide-react";
 import { useLocation } from "wouter";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { EcotramaUser, Scan, BlogPost } from "@shared/schema";
+import type { EcotramaUser, Scan, BlogPost, Product } from "@shared/schema";
 
 export default function EcoTramaApp() {
   const [currentUser, setCurrentUser] = useState<EcotramaUser | null>(null);
@@ -23,6 +23,7 @@ export default function EcoTramaApp() {
   const [address, setAddress] = useState("");
   const [wasteType, setWasteType] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [scannedBarcode, setScannedBarcode] = useState<string | undefined>(undefined);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const { toast } = useToast();
 
@@ -137,8 +138,38 @@ export default function EcoTramaApp() {
     }
   });
 
+  const productLookupMutation = useMutation({
+    mutationFn: async (barcode: string) => {
+      const response = await apiRequest("GET", `/api/ecotrama/products/${barcode}`);
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error("Error looking up product");
+      return (await response.json()) as Product;
+    },
+    onSuccess: (product) => {
+      if (product) {
+        setWasteType(product.type);
+        setScannedBarcode(product.barcode);
+        toast({
+          title: "¡Producto Identificado!",
+          description: `${product.name} (${product.brand || 'Generico'}) - +${product.points} pts`,
+          className: "bg-green-100 border-green-500 text-green-800 dark:bg-green-900 dark:text-green-100",
+        });
+      } else {
+        toast({
+          title: "Producto no registrado",
+          description: "Por favor selecciona el tipo de material manualmente.",
+          variant: "default",
+        });
+        setScannedBarcode(undefined);
+      }
+    },
+    onError: () => {
+      toast({ description: "Error al consultar la base de datos de productos", variant: "destructive" });
+    }
+  });
+
   const scanMutation = useMutation({
-    mutationFn: async (data: { userId: string; wasteType: string; quantity: number }) => {
+    mutationFn: async (data: { userId: string; wasteType: string; quantity: number, barcode?: string }) => {
       const response = await apiRequest("POST", "/api/ecotrama/scan", data);
       return (await response.json()) as { message: string, newPoints: number, pointsEarned: number, scan: Scan };
     },
@@ -155,6 +186,7 @@ export default function EcoTramaApp() {
       });
       setWasteType("");
       setQuantity(1);
+      setScannedBarcode(undefined);
       setView("home");
     },
     onError: () => {
@@ -424,22 +456,16 @@ export default function EcoTramaApp() {
                 <p className="text-sm text-muted-foreground">Escanea el código QR o de barras del residuo</p>
                 <div className="min-h-[300px]">
                   <Scanner onScan={(code) => {
-                    // Prevent multiple rapid scans from triggering repeatedly if already processing
-                    if (wasteType) return;
+                    // Prevent multiple rapid scans if already processing the same code or finding a product
+                    if (productLookupMutation.isPending || wasteType) return;
 
-                    toast({ description: `Código detectado: ${code}. Identificando...` });
-
-                    // Simulate API lookup delay
-                    setTimeout(() => {
-                      // In a real app, we would fetch product data here. 
-                      // For this demo, we'll randomize or default to Plastic, 
-                      // effectively "finding" the product.
-                      const simulatedType = ["Plástico", "Vidrio", "Papel", "Metal"][Math.floor(Math.random() * 4)];
-                      toast({ description: `¡Producto Identificado! ${simulatedType}` });
-                      setWasteType(simulatedType);
-                    }, 800);
+                    toast({ description: `Código detectado: ${code}. Buscando en base de datos...` });
+                    productLookupMutation.mutate(code);
                   }} />
                 </div>
+                {productLookupMutation.isPending && (
+                  <div className="text-center text-sm text-primary animate-pulse">Buscando producto...</div>
+                )}
                 <div className="text-center text-xs text-muted-foreground my-2">- O selecciona manual -</div>
                 <div className="grid grid-cols-2 gap-3">
                   {wasteCategories.map((category) => (
@@ -465,8 +491,11 @@ export default function EcoTramaApp() {
               <Card>
                 <CardContent className="pt-6 space-y-4">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-lg">{wasteType} selected</h3>
-                    <Button variant="ghost" size="sm" onClick={() => setWasteType("")}>Cambiar</Button>
+                    <h3 className="font-bold text-lg">{wasteType} seleccionado</h3>
+                    <Button variant="ghost" size="sm" onClick={() => {
+                      setWasteType("");
+                      setScannedBarcode(undefined);
+                    }}>Cambiar</Button>
                   </div>
                   <div>
                     <Label>Cantidad (en kg)</Label>
@@ -485,6 +514,7 @@ export default function EcoTramaApp() {
                         userId: currentUser.id,
                         wasteType,
                         quantity,
+                        barcode: scannedBarcode,
                       });
                     }}
                     disabled={scanMutation.isPending}

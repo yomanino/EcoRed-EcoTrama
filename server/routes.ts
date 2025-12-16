@@ -164,20 +164,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/ecotrama/products/:barcode", async (req, res) => {
+    try {
+      const product = await storage.getProductByBarcode(req.params.barcode);
+      if (!product) {
+        return res.status(404).json({ message: "Producto no encontrado" });
+      }
+      return res.json(product);
+    } catch (error) {
+      console.error("Error al buscar producto:", error);
+      return res.status(500).json({ message: "Error comprobando producto" });
+    }
+  });
+
   app.post("/api/ecotrama/scan", async (req, res) => {
     try {
-      const quantity = req.body.quantity;
-      const wasteType = req.body.wasteType;
+      const quantity = req.body.quantity || 1;
+      let wasteType = req.body.wasteType;
+      const barcode = req.body.barcode;
       // Use authenticated user ID if available, otherwise fallback to body provided (for testing/legacy)
       const userId = req.isAuthenticated() ? req.user!.id : req.body.userId;
 
-      if (!userId || !wasteType || !quantity) {
+      if (!userId) {
+        return res.status(401).json({ message: "No autenticado" });
+      }
+
+      let productPoints = undefined;
+
+      // If barcode provided, validate against product database
+      if (barcode) {
+        const product = await storage.getProductByBarcode(barcode);
+        if (product) {
+          wasteType = product.type; // Use authoritative type from DB
+          productPoints = product.points;
+        } else if (!wasteType) {
+          return res.status(404).json({ message: "Producto no registrado y tipo no especificado" });
+        }
+      }
+
+      if (!wasteType) {
         return res.status(400).json({
-          message: "Datos inválidos"
+          message: "Tipo de residuo requerido"
         });
       }
 
-      const result = await storage.recordScan(userId, wasteType, quantity);
+      const result = await storage.recordScan(userId, wasteType, quantity, productPoints);
       return res.json(result);
     } catch (error) {
       console.error("Error al registrar escaneo:", error);

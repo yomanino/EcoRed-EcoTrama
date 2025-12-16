@@ -1,83 +1,57 @@
-# 📝 DEPLOYMENT.md
+# Deploying EcoRed Comunal to Vercel
 
-Guía rápida para desplegar EcoRed Comunal en producción.
+The project is fully configured for deployment on Vercel. Follow these steps to get your app live.
 
----
+## Prerequisites
 
-## 🚀 Deployment Rápido
+1.  A [Vercel](https://vercel.com) account.
+2.  A [GitHub](https://github.com) account (recommended) or Vercel CLI.
+3.  A PostgreSQL database (e.g., [Neon.tech](https://neon.tech), [Supabase](https://supabase.com), or Vercel Postgres).
 
-### Opción Recomendada: Vercel
+## Environment Variables
 
-1. **Crear cuenta**: [vercel.com](https://vercel.com) → Sign up with GitHub
-2. **Importar proyecto**: Add New → Project → Selecciona tu repo
-3. **Configurar variables**:
-   ```
-   DATABASE_URL=postgresql://...
-   SESSION_SECRET=genera-un-string-aleatorio-seguro
-   NODE_ENV=production
-   ```
-4. **Deploy**: Click "Deploy" y espera 2-5 minutos
-5. **¡Listo!** Tu app estará en `https://tu-proyecto.vercel.app`
+You will need to set the following environment variable in your Vercel project settings:
 
----
+- `DATABASE_URL`: The connection string to your PostgreSQL database.
+    - *Format*: `postgres://user:password@host:port/database?sslmode=require`
 
-## 📚 Documentación Completa
+## Deployment Steps (GitHub Integration - Recommended)
 
-Para instrucciones detalladas, consulta la [Guía Completa de Deployment](https://github.com/tu-usuario/ecored-comunal/blob/main/docs/deployment-guide.md)
+1.  **Push to GitHub**: Ensure your latest code is pushed to your GitHub repository.
+2.  **Import to Vercel**:
+    - Go to your Vercel Dashboard.
+    - Click **"Add New..."** -> **"Project"**.
+    - Select your `EcoRedComunal` (or named) repository.
+3.  **Configure Project**:
+    - **Framework Preset**: Vercel should auto-detect "Vite" or "Other". If not, select **Vite**.
+    - **Root Directory**: `./` (default).
+    - **Build Command**: `npm run build` (default).
+    - **Output Directory**: `dist` (default).
+4.  **Add Environment Variables**:
+    - Expand the "Environment Variables" section.
+    - Key: `DATABASE_URL`
+    - Value: `[Your actual database connection string]`
+    - Click **Add**.
+5.  **Deploy**: Click **Deploy**.
 
----
+## Deployment Steps (Vercel CLI)
 
-## 🗄️ Base de Datos
+If you prefer using the command line:
 
-### Neon PostgreSQL (Gratis)
+1.  Open your terminal in the project folder.
+2.  Run `npx vercel login` if you haven't already.
+3.  Run `npx vercel deploy`.
+4.  Follow the prompts:
+    - Set up and deploy? **Yes**
+    - Which scope? **[Your Name]**
+    - Link to existing project? **No**
+    - Project name? **ecored-comunal** (or your choice)
+    - In which directory? **./**
+    - Want to modify these settings? **No** (The project defaults are correct)
+5.  **Important**: After the first deployment (which might fail if DB is missing), go to the Vercel Dashboard for this project, add the `DATABASE_URL` environment variable, and redeploy.
 
-1. Crear cuenta en [neon.tech](https://neon.tech)
-2. Crear proyecto → Copiar connection string
-3. Agregar a variables de entorno en Vercel
-4. Ejecutar migraciones:
-   ```bash
-   DATABASE_URL="tu-connection-string" npm run db:push
-   ```
+## Verifying Deployment
 
----
-
-## 🔐 Variables de Entorno Requeridas
-
-| Variable | Descripción |
-|----------|-------------|
-| `DATABASE_URL` | URL de PostgreSQL |
-| `SESSION_SECRET` | Secreto para sesiones (32+ chars) |
-| `NODE_ENV` | `production` |
-
-**Generar SESSION_SECRET:**
-```bash
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-```
-
----
-
-## ✅ Verificación
-
-Después del deployment, verifica:
-
-- [ ] Página principal carga
-- [ ] Navegación funciona
-- [ ] Imágenes se cargan
-- [ ] Formulario de contacto funciona
-- [ ] No hay errores en consola (F12)
-
----
-
-## 🔧 Troubleshooting
-
-**Build failed**: Verifica `npm run build` localmente
-**Database error**: Verifica `DATABASE_URL` en variables de entorno
-**404 en rutas**: Verifica que `vercel.json` esté en el repo
-
----
-
-## 📞 Soporte
-
-- [Vercel Docs](https://vercel.com/docs)
-- [Neon Docs](https://neon.tech/docs)
-- [Issues](https://github.com/tu-usuario/ecored-comunal/issues)
+1.  Open the URL provided by Vercel.
+2.  Test the **Scanner**: Go to "Escanear Residuo" and try scanning.
+3.  Test **Login/Register**: Ensure you can create an account (this verifies database connection).
