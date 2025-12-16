@@ -1,0 +1,121 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Mode - Creamy/Organic Base */
+    --background: 40 30% 96%;
+    --foreground: 160 40% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 160 40% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 40% 10%;
+
+    /* Primary: Vibrant Emerald */
+    --primary: 150 90% 35%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Golden Amber (Magical Touch) */
+    --secondary: 35 90% 55%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 40 20% 90%;
+    --muted-foreground: 40 10% 40%;
+
+    --accent: 170 60% 90%;
+    --accent-foreground: 150 90% 35%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 40 20% 85%;
+    --input: 40 20% 85%;
+    --ring: 150 90% 35%;
+
+    --radius: 1rem;
+
+    --chart-1: 150 90% 35%;
+    --chart-2: 35 90% 55%;
+    --chart-3: 170 60% 45%;
+    --chart-4: 45 90% 60%;
+    --chart-5: 20 80% 60%;
+  }
+
+  .dark {
+    /* Dark Mode - Deep Forest & Bioluminescence */
+    --background: 160 50% 4%;
+    /* Very dark green/black */
+    --foreground: 40 30% 96%;
+
+    --card: 160 50% 6%;
+    --card-foreground: 40 30% 96%;
+
+    --popover: 160 50% 6%;
+    --popover-foreground: 40 30% 96%;
+
+    /* Primary: Neon Emerald */
+    --primary: 150 100% 45%;
+    --primary-foreground: 160 50% 5%;
+
+    /* Secondary: Glowing Amber */
+    --secondary: 35 100% 60%;
+    --secondary-foreground: 160 50% 5%;
+
+    --muted: 160 30% 12%;
+    --muted-foreground: 160 10% 65%;
+
+    --accent: 160 30% 12%;
+    --accent-foreground: 40 30% 96%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+
+    --border: 160 30% 12%;
+    --input: 160 30% 12%;
+    --ring: 150 100% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased selection:bg-primary/20 selection:text-primary;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading font-bold tracking-tight;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-white/60 dark:bg-black/40 backdrop-blur-xl border border-white/30 dark:border-white/10 shadow-xl;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px hsla(var(--primary), 0.5);
+  }
+
+  .box-glow {
+    box-shadow: 0 0 40px -10px hsla(var(--primary), 0.3);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary;
+  }
+
+  .hover-lift {
+    @apply transition-transform duration-300 hover:-translate-y-1 hover:shadow-lg;
+  }
+}
