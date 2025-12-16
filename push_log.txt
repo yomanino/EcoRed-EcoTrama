@@ -1,0 +1,66 @@
+﻿git : remote: error: GH013: Repository 
+rule violations found for 
+refs/heads/feature/initial-setup.        
+En línea: 1 Carácter: 1
++ git push -u origin 
+feature/initial-setup 2>&1 | Out-File 
+push_log.txt ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo          : NotSpecifie 
+   d: (remote: error: ...-setup.          
+  :String) [], RemoteException
+    + FullyQualifiedErrorId : NativeComma 
+   ndError
+ 
+remote: 
+remote: - GITHUB PUSH PROTECTION        
+remote:   ÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇ
+öÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇ
+öÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇ
+öÔÇöÔÇö        
+remote:     Resolve the following 
+violations before pushing again        
+remote: 
+remote:     - Push cannot contain secrets 
+       
+remote: 
+remote:             
+remote:      (?) Learn how to resolve a 
+blocked push        
+remote:      https://docs.github.com/code-
+security/secret-scanning/working-with-secr
+et-scanning-and-push-protection/working-wi
+th-push-protection-from-the-command-line#r
+esolving-a-blocked-push        
+remote:             
+remote:             
+remote:       ÔÇöÔÇö Slack Incoming 
+Webhook URL ÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇö
+ÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇöÔÇö
+        
+remote:        locations:        
+remote:          - commit: 
+808faa3ed41f92af215a5b148ddb8da29c3e25a2  
+      
+remote:            path: .config/replit/.s
+emgrep/semgrep_rules.json:9054        
+remote:             
+remote:        (?) To push, remove secret 
+from commit(s) or follow this URL to 
+allow the secret.        
+remote:        https://github.com/yomanino
+/EcoRed-EcoTrama/security/secret-scanning/
+unblock-secret/36vgyp7RSZKYCFgb3Zd0zXtq5nA
+        
+remote:             
+remote: 
+remote: 
+To https://github.com/yomanino/EcoRed-EcoT
+rama.git
+ ! [remote rejected] 
+feature/initial-setup -> 
+feature/initial-setup (push declined due 
+to repository rule violations)
+error: failed to push some refs to 'https:
+//github.com/yomanino/EcoRed-EcoTrama.git'
